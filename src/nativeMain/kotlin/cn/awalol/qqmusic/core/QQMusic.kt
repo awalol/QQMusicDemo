@@ -7,11 +7,12 @@ import platform.windows.*
 //  curPos 0x57DC091C(QQMusic.dll+B7091C) or 0x57D520D0(QQMusic.dll+B020D0)
 //  songLen 0x57D520D4 QQMusic.dll+B020D4
 //  songId 0x57DC2878 QQMusic.dll+B72878
+@OptIn(ExperimentalForeignApi::class)
 class QQMusic {
     private var processHandle : HANDLE
-    private val curPosition = 0x57DC091CL
-    private val songLength = 0x57D520D4L
-    private val songId = 0x57DC2878L
+    private val curPosition = 0x5C16091CL
+    private val songLength = 0x5C0F20D4L
+    private val songId = 0x5C162878L
 
     init {
         // TODO:使用进程名获取窗口句柄
@@ -21,7 +22,7 @@ class QQMusic {
             GetWindowThreadProcessId(windowHandle,outBuffer.ptr)
             outBuffer.value
         }
-        processHandle = OpenProcess(PROCESS_VM_READ,0,processId)!!
+        processHandle = OpenProcess(PROCESS_VM_READ.toUInt(),0,processId)!!
     }
 
     fun readCurrentPosition() = readMemory(curPosition)

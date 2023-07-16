@@ -2,10 +2,12 @@ import org.jetbrains.kotlin.gradle.plugin.mpp.Executable
 
 plugins {
     kotlin("multiplatform") version "1.8.21"
+    kotlin("plugin.serialization") version "1.9.0"
 }
 
 group = "cn.awalol"
 version = "1.0-SNAPSHOT"
+val ktor_version = "2.3.2"
 
 repositories {
     mavenCentral()
@@ -34,6 +36,11 @@ kotlin {
         val nativeMain by getting{
             dependencies {
                 implementation("com.github.msink:libui:0.1.8")
+                implementation("io.ktor:ktor-client-core:$ktor_version")
+                implementation("io.ktor:ktor-client-winhttp:$ktor_version")
+                implementation("io.ktor:ktor-serialization-kotlinx-json:$ktor_version")
+                implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.4")
+                implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.5.1")
             }
         }
         val nativeTest by getting

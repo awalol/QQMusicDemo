@@ -24,12 +24,16 @@ class QQMusic {
         processHandle = OpenProcess(PROCESS_VM_READ,0,processId)!!
     }
 
-    fun readCurrentPosition() : UInt{
+    fun readCurrentPosition() = readMemory(curPosition)
+    fun readSongLength() = readMemory(songLength)
+    fun readSongId() = readMemory(songId)
+
+    private fun readMemory(address: Long): UInt{
         memScoped {
             val buff = alloc<UIntVar>()
             ReadProcessMemory(
                 hProcess = processHandle,
-                lpBaseAddress = curPosition.toCPointer(),
+                lpBaseAddress = address.toCPointer(),
                 lpBuffer = buff.ptr,
                 nSize = 4u,
                 lpNumberOfBytesRead = null
@@ -37,34 +41,4 @@ class QQMusic {
             return buff.value
         }
     }
-
-    fun readSongLength() : UInt{
-        memScoped {
-            val buff = alloc<UIntVar>()
-            ReadProcessMemory(
-                hProcess = processHandle,
-                lpBaseAddress = songLength.toCPointer(),
-                lpBuffer = buff.ptr,
-                nSize = 4u,
-                lpNumberOfBytesRead = null
-            )
-            return buff.value
-        }
-    }
-
-    fun readSongId() : UInt{
-        memScoped {
-            val buff = alloc<UIntVar>()
-            ReadProcessMemory(
-                hProcess = processHandle,
-                lpBaseAddress = songId.toCPointer(),
-                lpBuffer = buff.ptr,
-                nSize = 4u,
-                lpNumberOfBytesRead = null
-            )
-            return buff.value
-        }
-    }
-
-
 }

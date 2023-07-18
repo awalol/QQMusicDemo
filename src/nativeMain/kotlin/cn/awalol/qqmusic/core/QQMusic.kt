@@ -9,21 +9,12 @@ import platform.windows.*
 //  songId 0x57DC2878 QQMusic.dll+B72878
 @OptIn(ExperimentalForeignApi::class)
 class QQMusic {
-    private var processHandle : HANDLE
-    private val curPosition = 0x5C16091CL
-    private val songLength = 0x5C0F20D4L
-    private val songId = 0x5C162878L
-
-    init {
-        // TODO:使用进程名获取窗口句柄
-        val windowHandle = FindWindowW(null,"桌面歌词")
-        val processId = memScoped {
-            val outBuffer = alloc<DWORDVar>()
-            GetWindowThreadProcessId(windowHandle,outBuffer.ptr)
-            outBuffer.value
-        }
-        processHandle = OpenProcess(PROCESS_VM_READ.toUInt(),0,processId)!!
-    }
+    private val pid = getProcessID("QQMusic.exe")
+    private var processHandle : HANDLE = OpenProcess(PROCESS_VM_READ.toUInt(),0,pid)!!
+    private val baseAddress = getProcessModuleAddress("QQMusic.dll",pid)
+    private var curPosition = baseAddress + 0xB020D0L
+    private var songLength = baseAddress + 0xB020D4L
+    private var songId = baseAddress + 0xB72878L
 
     fun readCurrentPosition() = readMemory(curPosition)
     fun readSongLength() = readMemory(songLength)
@@ -40,6 +31,44 @@ class QQMusic {
                 lpNumberOfBytesRead = null
             )
             return buff.value
+        }
+    }
+
+    private fun getProcessID(processName: String): UInt{
+        memScoped {
+            val snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS.toUInt(),0U)
+            val processEntry = alloc<PROCESSENTRY32W>()
+            processEntry.dwSize = sizeOf<PROCESSENTRY32W>().convert()
+            if(Process32FirstW(snapshot,processEntry.ptr) != 0){
+                do {
+                    val name = processEntry.szExeFile.toKString()
+                    if(processName == name){
+                        CloseHandle(snapshot)
+                        return processEntry.th32ProcessID
+                    }
+                }while (Process32NextW(snapshot,processEntry.ptr) != 0)
+            }
+            CloseHandle(snapshot)
+            return 0U
+        }
+    }
+
+    private fun getProcessModuleAddress(moduleName: String,pid: UInt): Long{
+        memScoped {
+            val snapshot = CreateToolhelp32Snapshot((TH32CS_SNAPMODULE or TH32CS_SNAPMODULE32).toUInt(),pid)
+            val moduleEntry = alloc<MODULEENTRY32W>()
+            moduleEntry.dwSize = sizeOf<MODULEENTRY32W>().convert()
+            if(Module32FirstW(snapshot,moduleEntry.ptr) != 0){
+                do {
+                    val name = moduleEntry.szModule.toKString()
+                    if(name == moduleName){
+                        CloseHandle(snapshot)
+                        return moduleEntry.modBaseAddr.toLong()
+                    }
+                }while (Module32NextW(snapshot,moduleEntry.ptr) != 0)
+            }
+            CloseHandle(snapshot)
+            return 0
         }
     }
 }

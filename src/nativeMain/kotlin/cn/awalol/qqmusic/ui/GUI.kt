@@ -16,10 +16,8 @@ class GUI {
         height = 240
     ){
         vbox {
-            button("currentPosition"){
+            button("test"){
                 action {
-                    val qqMusic = QQMusic()
-                    scroll.append(qqMusic.readCurrentPosition().toString() + "\n")
                 }
             }
 

@@ -1,7 +1,8 @@
 import org.jetbrains.kotlin.gradle.plugin.mpp.Executable
+import org.jetbrains.kotlin.konan.target.Architecture
 
 plugins {
-    kotlin("multiplatform") version "1.8.21"
+    kotlin("multiplatform") version "1.9.0"
     kotlin("plugin.serialization") version "1.9.0"
 }
 
@@ -23,6 +24,11 @@ kotlin {
     }
 
     nativeTarget.apply {
+        compilations.getByName("main"){
+            cinterops{
+                val windows by creating
+            }
+        }
         binaries {
             executable {
                 windowsResources("${project.projectDir}/src/nativeMain/resources/samples.rc")
@@ -54,9 +60,9 @@ fun Executable.windowsResources(rcFileName: String) {
 
     val windresTask = tasks.create<Exec>(taskName) {
         val konanDataDir = System.getenv("KONAN_DATA_DIR") ?: "${System.getProperty("user.home")}/.konan"
-        val toolchainBinDir = when (target.konanTarget.architecture.bitness) {
-            32 -> File("$konanDataDir/dependencies/msys2-mingw-w64-i686-2/bin").invariantSeparatorsPath
-            64 -> File("$konanDataDir/dependencies/msys2-mingw-w64-x86_64-2/bin").invariantSeparatorsPath
+        val toolchainBinDir = when (target.konanTarget.architecture) {
+            Architecture.X86 -> File("$konanDataDir/dependencies/msys2-mingw-w64-i686-2/bin").invariantSeparatorsPath
+            Architecture.X64 -> File("$konanDataDir/dependencies/msys2-mingw-w64-x86_64-2/bin").invariantSeparatorsPath
             else -> error("Unsupported architecture")
         }
 
@@ -65,7 +71,7 @@ fun Executable.windowsResources(rcFileName: String) {
         commandLine("$toolchainBinDir/windres", inFile, "-D_${buildType.name}", "-O", "coff", "-o", outFile)
         environment("PATH", "$toolchainBinDir;${System.getenv("PATH")}")
 
-        dependsOn(compilation.compileKotlinTask)
+        dependsOn(compilation.compileTaskProvider)
     }
 
     linkTask.dependsOn(windresTask)
